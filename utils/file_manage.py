@@ -12,7 +12,7 @@ from xlrd import open_workbook,xldate_as_tuple
 import xlrd
 import datetime
 import xlwt
-import copy
+from xlutils.copy import copy
 
 
 
@@ -29,16 +29,20 @@ class YamlManage:
         if not self._data:
             with open(self.yaml_file,'rb') as f:
                 self._data = list(yaml.safe_load_all(f))
-            return self._data
+        return self._data
 
     def get_data(self,element):
-        return self.data[0].get(element)
+        print(self.data[0])
+        value = self.data[0].get(element)
+        print(value)
+        print(self.data[0])
+        return value
 
     def set_data(self,key,value):
         data = self.data[0]
         data[key]=value
         with open(self.yaml_file,'w') as f:
-            yaml.dump(data,f)
+            yaml.dump(data, f, default_flow_style=False,encoding='utf-8',allow_unicode=True)
 
 class SheetTypeError(Exception):
     def __init__(self, value):
@@ -89,7 +93,7 @@ class ExcelReader:
                     list_value.append(str_obj)
                     num = num + 1
                 self._data = list_value
-            return self._data
+        return self._data
 
 
 class ExcelWriter:
@@ -98,18 +102,18 @@ class ExcelWriter:
         if os.path.exists(os.path.join(Path().base_path,'result',filename)):
             self.workbook = xlrd.open_workbook(os.path.join(Path().base_path,'result',filename))
             if sheet_name in self.workbook.sheet_names():
-                worksheet = self.workbook.sheet_by_name()  # 获取工作簿中所有表格中的的第一个表格
+                worksheet = self.workbook.sheet_by_name(sheet_name)  # 获取工作簿中所有表格中的的第一个表格
                 self.rows_old = worksheet.nrows  # 获取表格中已存在的数据的行数
                 self.work_book = copy(self.workbook)  # 将xlrd对象拷贝转化为xlwt对象
                 self.work_sheet = self.work_book.get_sheet(sheet_name)  # 获取转化后工作簿中的第一个表格
             else:
                 self.rows_old = 0
                 self.work_book = copy(self.workbook)
-                self.work_sheet = self.workbook.add_sheet(sheet_name)
+                self.work_sheet = self.work_book.add_sheet(sheet_name)
         else:
             self.rows_old = 0
             self.work_book = xlwt.Workbook()
-            self.work_sheet = self.workbook.add_sheet(sheet_name)  # 在工作簿中新建一个表格
+            self.work_sheet = self.work_book.add_sheet(sheet_name)  # 在工作簿中新建一个表格
         self.filename = filename
 
 
@@ -117,11 +121,14 @@ class ExcelWriter:
         index = len(value)  # 获取需要写入数据的行数
         for i in range(0, index):
             for j in range(0, len(value[i])):
-                self.work_book.write(i+self.rows_old, j, value[i][j])  # 像表格中写入数据（对应的行和列）
-        path = os.path.join(Path().basepath, 'result', self.ilename)
+                self.work_sheet.write(i+self.rows_old, j, value[i][j])  # 像表格中写入数据（对应的行和列）
+        path = os.path.join(Path().base_path, 'result', self.filename)
         self.work_book.save(path)
 
 
 if __name__  == '__main__':
-    data = ExcelReader(filename='appcasedata.xlsx')
-    print(data.data)
+    yml_data = YamlManage('config.yml')
+    print(yml_data.get_data('name'))
+
+    # data = ExcelWriter(filename='aaa.xlsx',sheet_name='2')
+    # data.write_file([[1,2,3]])
